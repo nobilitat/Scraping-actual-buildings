@@ -48,6 +48,7 @@ def table_formation():
                 'amount_apartments': [],
                 'area': [],
                 'commissioning': [],
+                'picture': []
         })
 
     with open("link/links.txt", "r", encoding="utf-8") as file_links:
@@ -97,6 +98,9 @@ def table_formation():
                 if building.find('span', class_='styles__Ellipsis-sc-1fw79ul-0 cDcbYl styles__Child-sc-b0i2cq-0 styles__Secondary-sc-b0i2cq-2 dViVBC') is not None:
                     group_company = building.find('span', 
                                     class_='styles__Ellipsis-sc-1fw79ul-0 cDcbYl styles__Child-sc-b0i2cq-0 styles__Secondary-sc-b0i2cq-2 dViVBC')
+                    group_company = group_company.text
+                else:
+                    group_company='-'
                 # Количество этажей и квартир
                 floors_and_apartments = building.find_all('div', 
                                         class_='styles__Cell-sc-7809tj-0 ibavEN Newbuindings Newbuildings_small')
@@ -108,8 +112,10 @@ def table_formation():
                 area = area_and_commissioning[1].text
                 commissioning = area_and_commissioning[2].text
                 
-                df.loc[index_record] = [id_object.text, addres_object.text, developer_object.text, group_company.text, 
-                                    amount_floors, amount_apartments, area, commissioning]
+                pic_object = find_picture(id_object)
+
+                df.loc[index_record] = [id_object.text, addres_object.text, developer_object.text, group_company, 
+                                        amount_floors, amount_apartments, area, commissioning, pic_object]
                 index_record +=1
     return df
 
@@ -123,6 +129,22 @@ def change_link(link_building):
     link_building = link_building + f'&page=0&limit=10&place=0-24&fromQuarter={fromQuarter}&objStatus=0'
     return link_building
         
+
+def find_picture(id_object):
+    """Получение картинки объекта"""
+
+    pic_object = requests.get(f'https://наш.дом.рф/сервисы/каталог-новостроек/объект/{id_object.text}')
+    soup = BeautifulSoup(pic_object.text, 'lxml')
+
+    pic_object = soup.find('div', class_='swiper-slide')
+    try:
+        pic_object = pic_object.find('img')
+    except:
+        pic_object='-'
+        return pic_object
+    pic_object = pic_object.attrs['src']
+    return pic_object
+
 
 def saving_to_file(df):
     """Сохранение dataframe в файл"""
